@@ -155,7 +155,7 @@ export default function Home() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, delay: isLoading ? 1.2 : 0 }}
-        className="max-w-7xl mx-auto p-4 md:p-6 space-y-6 min-h-screen bg-gradient-to-br from-[#7DBEFF] via-blue-100/60 to-transparent"
+        className="max-w-7xl mx-auto p-4 md:p-6 space-y-6 min-h-screen"
       >
         {/* Header dengan jam dan tombol tambah */}
         <motion.div
