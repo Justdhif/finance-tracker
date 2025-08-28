@@ -261,13 +261,12 @@ export default function Home() {
                 dialogMode === "edit" && editTransaction
                   ? editTransaction
                   : selectedDate
-                  ? {
-                      id: "",
+                  ? ({
                       type: "expense",
                       description: "",
                       amount: 0,
                       date: selectedDate.toISOString(),
-                    }
+                    } as Transaction)
                   : undefined
               }
               onAdd={addTransaction}
