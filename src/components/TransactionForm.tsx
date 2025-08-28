@@ -61,7 +61,7 @@ export default function TransactionForm({
 
   return (
     <Card className="overflow-hidden border-0 md:border shadow-none md:shadow-sm">
-      <CardContent className="p-4 md:p-6">
+      <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
           {/* Jenis Transaksi */}
           <div className="space-y-2 md:space-y-3">

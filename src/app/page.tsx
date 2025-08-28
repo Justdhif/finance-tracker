@@ -6,6 +6,8 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Transaction } from "@/models/Transaction";
 import CalendarView from "@/components/CalendarView";
 import TransactionForm from "@/components/TransactionForm";
+import MobileTransactionForm from "@/components/MobileTransactionForm";
+import LoadingScreen from "@/components/LoadingScreen"; // Komponen loading baru
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,13 +28,23 @@ export default function Home() {
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isDialogOpen, setDialogOpen] = useState(false);
+  const [isMobileFormOpen, setMobileFormOpen] = useState(false);
   const [editTransaction, setEditTransaction] = useState<Transaction | null>(
     null
   );
   const [search, setSearch] = useState("");
   const [dialogMode, setDialogMode] = useState<"add" | "edit">("add");
   const [currentTime, setCurrentTime] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(true); // State untuk animasi loading
+  const [isLoading, setIsLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Deteksi ukuran layar
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // Update waktu setiap detik
   useEffect(() => {
@@ -44,11 +56,11 @@ export default function Home() {
     return () => clearInterval(timer);
   }, []);
 
-  // Simulasi loading saat pertama kali buka atau refresh
+  // Simulasi loading
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 1500); // Durasi animasi loading
+    }, 2500); // Sedikit lebih lama untuk menikmati animasi loading
 
     return () => clearTimeout(timer);
   }, []);
@@ -68,6 +80,20 @@ export default function Home() {
     setSelectedDate(date);
   };
 
+  // ---- Buka form ----
+  const openForm = (mode: "add" | "edit", transaction?: Transaction) => {
+    setDialogMode(mode);
+    if (transaction) {
+      setEditTransaction(transaction);
+    }
+
+    if (isMobile) {
+      setMobileFormOpen(true);
+    } else {
+      setDialogOpen(true);
+    }
+  };
+
   // ---- Tambah/Edit transaksi ----
   const addTransaction = (t: Transaction) => {
     setTransactions((prev) => {
@@ -77,7 +103,10 @@ export default function Home() {
       }
       return [...prev, t];
     });
+
+    // Tutup kedua jenis form
     setDialogOpen(false);
+    setMobileFormOpen(false);
     setEditTransaction(null);
   };
 
@@ -109,46 +138,7 @@ export default function Home() {
   return (
     <>
       {/* Animasi Loading */}
-      <AnimatePresence>
-        {isLoading && (
-          <motion.div
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className="fixed inset-0 bg-gradient-to-br from-[#7DBEFF] via-blue-100/60 to-transparent z-50 flex items-center justify-center"
-          >
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 1.2, opacity: 0 }}
-              transition={{ duration: 0.7, ease: "easeOut" }}
-              className="text-center"
-            >
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full mx-auto mb-4"
-              />
-              <motion.h2
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="text-xl font-semibold text-blue-800"
-              >
-                Finance Tracker
-              </motion.h2>
-              <motion.p
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                className="text-blue-600 mt-2"
-              >
-                Mengelola keuangan dengan mudah
-              </motion.p>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <AnimatePresence>{isLoading && <LoadingScreen />}</AnimatePresence>
 
       {/* Konten Utama */}
       <motion.main
@@ -169,7 +159,7 @@ export default function Home() {
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
               transition={{ duration: 0.3 }}
-              className="text-2xl md:text-3xl font-semibold text-blue-800/90 drop-shadow-sm"
+              className="text-xl md:text-2xl font-semibold text-blue-800/90 drop-shadow-sm"
             >
               {currentTime}
             </motion.div>
@@ -179,9 +169,7 @@ export default function Home() {
             <Button
               onClick={() => {
                 setSelectedDate(new Date());
-                setDialogMode("add");
-                setEditTransaction(null);
-                setDialogOpen(true);
+                openForm("add");
               }}
               className="bg-[linear-gradient(to_bottom_left,_#7DBEFF_23%,_#A8E5FF_100%)] text-white hover:bg-[linear-gradient(to_bottom_left,_#7DBEFF_23%,_#A8E5FF_100%)] dark:bg-[linear-gradient(to_bottom_left,_#7DBEFF_23%,_#A8E5FF_100%)] dark:text-white dark:hover:bg-[linear-gradient(to_bottom_left,_#7DBEFF_23%,_#A8E5FF_100%)] cursor-pointer text-sm md:text-base shadow-md hover:shadow-lg transition-all"
             >
@@ -192,7 +180,7 @@ export default function Home() {
 
         {/* 2 kolom: kalender kiri, summary & transaksi kanan */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-          {/* Kalender - di mobile akan full width dan di atas */}
+          {/* Kalender */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -208,7 +196,7 @@ export default function Home() {
             />
           </motion.div>
 
-          {/* Panel kanan - di mobile akan full width dan di bawah */}
+          {/* Panel kanan */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -226,22 +214,18 @@ export default function Home() {
               transactions={dailyTransactions}
               search={search}
               setSearch={setSearch}
-              onEdit={(t) => {
-                setEditTransaction(t);
-                setDialogMode("edit");
-                setDialogOpen(true);
-              }}
+              onEdit={(t) => openForm("edit", t)}
               onDelete={deleteTransaction}
             />
           </motion.div>
         </div>
 
-        {/* Dialog Tambah/Edit */}
+        {/* Dialog untuk Desktop */}
         <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent className="max-w-[95vw] sm:max-w-[500px] rounded-lg">
             <DialogHeader>
               <DialogTitle className="text-lg md:text-xl">
-                {dialogMode === "edit" ? "Edit Transaksi" : "Tambah Transaksi"}{" "}
+                {dialogMode === "edit" ? "Edit Transaksi" : "Tambah Transaksi"}
               </DialogTitle>
             </DialogHeader>
 
@@ -259,11 +243,8 @@ export default function Home() {
                     }
                   : undefined
               }
-              onAdd={(t) => {
-                if (!t.id) t.id = Date.now().toString();
-                addTransaction(t);
-              }}
-              isEditMode={false}
+              onAdd={addTransaction}
+              isEditMode={dialogMode === "edit"}
               onCancel={() => {
                 setDialogOpen(false);
                 setEditTransaction(null);
@@ -271,6 +252,33 @@ export default function Home() {
             />
           </DialogContent>
         </Dialog>
+
+        {/* Mobile Form (muncul dari bawah) */}
+        <AnimatePresence>
+          {isMobileFormOpen && (
+            <MobileTransactionForm
+              defaultValue={
+                dialogMode === "edit" && editTransaction
+                  ? editTransaction
+                  : selectedDate
+                  ? {
+                      id: "",
+                      type: "expense",
+                      description: "",
+                      amount: 0,
+                      date: selectedDate.toISOString(),
+                    }
+                  : undefined
+              }
+              onAdd={addTransaction}
+              isEditMode={dialogMode === "edit"}
+              onClose={() => {
+                setMobileFormOpen(false);
+                setEditTransaction(null);
+              }}
+            />
+          )}
+        </AnimatePresence>
       </motion.main>
     </>
   );

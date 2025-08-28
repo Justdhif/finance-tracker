@@ -14,6 +14,7 @@ import {
 } from "date-fns";
 import { Transaction } from "@/models/Transaction";
 import { motion, AnimatePresence } from "framer-motion";
+import MonthPicker from "./MonthPicker"; // Import komponen MonthPicker
 
 type Props = {
   currentMonth: Date;
@@ -33,7 +34,8 @@ export default function CalendarView({
   onDateClick,
   onMonthChange,
 }: Props) {
-  const [direction, setDirection] = useState(0); // 0: no animation, -1: left, 1: right
+  const [direction, setDirection] = useState(0);
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
 
   const monthStart = startOfMonth(currentMonth);
   const rangeStart = startOfWeek(monthStart, { weekStartsOn: 1 });
@@ -60,6 +62,14 @@ export default function CalendarView({
     setDirection(1);
     const nextMonth = addMonths(currentMonth, 1);
     setTimeout(() => onMonthChange(nextMonth), 300);
+  };
+
+  const toggleMonthPicker = () => {
+    setShowMonthPicker(!showMonthPicker);
+  };
+
+  const handleMonthPickerClose = () => {
+    setShowMonthPicker(false);
   };
 
   // Variants for month title animation
@@ -101,7 +111,7 @@ export default function CalendarView({
   };
 
   return (
-    <div className="w-full bg-white dark:bg-gray-800 rounded-xl shadow-md p-3 md:p-4 overflow-x-auto">
+    <div className="w-full bg-white dark:bg-gray-800 rounded-xl shadow-md p-3 md:p-4 overflow-x-auto relative">
       {/* Calendar Header */}
       <div className="flex items-center justify-between mb-4 md:mb-6">
         <motion.button
@@ -126,20 +136,44 @@ export default function CalendarView({
           </svg>
         </motion.button>
 
-        <AnimatePresence mode="wait" custom={direction}>
-          <motion.h2
-            key={format(currentMonth, "MMMM yyyy")}
-            custom={direction}
-            variants={monthTitleVariants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="text-lg md:text-xl font-bold text-gray-800 dark:text-white min-w-[150px] text-center"
+        <div className="flex items-center">
+          <button onClick={toggleMonthPicker}>
+            <AnimatePresence mode="wait" custom={direction}>
+              <motion.h2
+                key={format(currentMonth, "MMMM yyyy")}
+                custom={direction}
+                variants={monthTitleVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="text-lg md:text-xl font-bold text-gray-800 dark:text-white min-w-[150px] text-center"
+              >
+                {format(currentMonth, "MMMM yyyy")}
+              </motion.h2>
+            </AnimatePresence>
+          </button>
+
+          <button
+            onClick={toggleMonthPicker}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors duration-300"
           >
-            {format(currentMonth, "MMMM yyyy")}
-          </motion.h2>
-        </AnimatePresence>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4 md:h-5 md:w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+        </div>
 
         <motion.button
           whileHover={{ scale: 1.1 }}
@@ -164,16 +198,30 @@ export default function CalendarView({
         </motion.button>
       </div>
 
+      {/* Month Picker Component */}
+      <MonthPicker
+        currentMonth={currentMonth}
+        onMonthChange={onMonthChange}
+        isOpen={showMonthPicker}
+        onClose={handleMonthPickerClose}
+      />
+
       {/* Calendar container */}
-      <div className="min-w-[350px]">
-        {/* Weekday headers - static */}
+      <div className="min-w-[300px]">
+        {/* Weekday headers - improved design */}
         <div className="grid grid-cols-7 gap-1 md:gap-2 mb-3 md:mb-4">
-          {weekdayNames.map((d) => (
+          {weekdayNames.map((d, index) => (
             <div
               key={d}
-              className="text-center text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400 truncate"
+              className={`text-center text-xs md:text-sm font-medium truncate py-2 rounded-md ${
+                index === 5 // Saturday
+                  ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20"
+                  : index === 6 // Sunday
+                  ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20"
+                  : "text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700"
+              }`}
             >
-              {d.substring(0, 3)}
+              {d}
             </div>
           ))}
         </div>
@@ -189,7 +237,7 @@ export default function CalendarView({
             exit="exit"
             className="grid grid-cols-7 gap-1 md:gap-2"
           >
-            {days.map((day) => {
+            {days.map((day, index) => {
               const iso = format(day, "yyyy-MM-dd");
               const dayTx = txByDate(day);
               const inMonth = isSameMonth(day, currentMonth);
@@ -198,6 +246,7 @@ export default function CalendarView({
                 selectedDate &&
                 format(selectedDate, "yyyy-MM-dd") ===
                   format(day, "yyyy-MM-dd");
+              const isSunday = index % 7 === 6; // Sundays are the 7th day in each week
 
               // Calculate total income and expenses for the day
               const dayIncome = dayTx
@@ -222,8 +271,10 @@ export default function CalendarView({
                   className={cn(
                     "min-h-[4.5rem] md:min-h-[7rem] rounded-lg p-1 md:p-2 cursor-pointer flex flex-col transition-all duration-300",
                     "border border-gray-200 dark:border-gray-700",
+                    // Sunday styling
+                    isSunday && inMonth && "bg-red-50 dark:bg-red-900/10",
                     // Gradient background for current month days
-                    inMonth && !today && !isSelected
+                    inMonth && !today && !isSelected && !isSunday
                       ? "bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900"
                       : "",
                     // Other month styling - more subtle
@@ -248,6 +299,8 @@ export default function CalendarView({
                     <div
                       className={cn(
                         "text-xs md:text-sm font-medium h-5 w-5 md:h-7 md:w-7 flex items-center justify-center rounded-full transition-all duration-300 ease-in-out",
+                        // Sunday text color
+                        isSunday && inMonth && "text-red-600 dark:text-red-400",
                         // Current month styling
                         inMonth
                           ? today
@@ -293,7 +346,7 @@ export default function CalendarView({
                     {/* Transaction count badge */}
                     {dayTx.length > 0 && (
                       <div className="text-xs text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-full px-1.5 py-0.5 text-center transition-all duration-300">
-                        {dayTx.length}
+                        {dayTx.length} Transaksi
                       </div>
                     )}
                   </div>

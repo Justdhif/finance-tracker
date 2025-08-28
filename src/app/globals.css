@@ -119,4 +119,16 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-[linear-gradient(to_bottom_left,_#7DBEFF_23%,_#A8E5FF_100%)];
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-[linear-gradient(to_top_right,_#7DBEFF_23%,_#A8E5FF_100%)];
+  }
 }
