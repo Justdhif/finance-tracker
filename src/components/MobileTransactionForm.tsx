@@ -15,6 +15,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { motion, PanInfo } from "framer-motion";
 import { X } from "lucide-react";
+import { toast } from "sonner"; // Import Sonner toast
 
 type Props = {
   onAdd: (t: Transaction) => void;
@@ -69,7 +70,22 @@ export default function MobileTransactionForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!description || !amount || !date) return;
+
+    // Validasi form
+    if (!description.trim()) {
+      toast.error("Deskripsi harus diisi");
+      return;
+    }
+
+    if (!amount || amount <= 0) {
+      toast.error("Jumlah harus lebih dari 0");
+      return;
+    }
+
+    if (!date) {
+      toast.error("Tanggal harus diisi");
+      return;
+    }
 
     const newTransaction: Transaction = {
       id: defaultValue?.id ?? Date.now().toString(),
@@ -80,6 +96,19 @@ export default function MobileTransactionForm({
     };
 
     onAdd(newTransaction);
+
+    // Tampilkan toast sukses
+    toast.success(
+      isEditMode
+        ? "Transaksi berhasil diperbarui"
+        : "Transaksi berhasil ditambahkan",
+      {
+        description: `${description} - Rp ${amount.toLocaleString("id-ID")}`,
+      }
+    );
+
+    // Tutup form mobile setelah submit
+    onClose();
   };
 
   return (
@@ -128,7 +157,11 @@ export default function MobileTransactionForm({
           </div>
         </div>
 
-        <div className="overflow-y-auto max-h-[calc(90vh-60px)]">
+        <div
+          className="overflow-y-auto max-h-[calc(90vh-60px)] 
+          [-ms-overflow-style:none] [scrollbar-width:none] 
+          [&::-webkit-scrollbar]:hidden"
+        >
           <Card className="overflow-hidden border-0 shadow-none rounded-none">
             <CardContent className="p-4 pb-8">
               <form onSubmit={handleSubmit} className="space-y-4">

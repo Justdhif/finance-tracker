@@ -7,7 +7,7 @@ import { Transaction } from "@/models/Transaction";
 import CalendarView from "@/components/CalendarView";
 import TransactionForm from "@/components/TransactionForm";
 import MobileTransactionForm from "@/components/MobileTransactionForm";
-import LoadingScreen from "@/components/LoadingScreen"; // Komponen loading baru
+import LoadingScreen from "@/components/LoadingScreen";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,6 +18,8 @@ import {
 import SummaryPanel from "@/components/SummaryPanel";
 import DailyTransactionsList from "@/components/DailyTransactionsList";
 import { motion, AnimatePresence } from "framer-motion";
+import ChatBubble from "@/components/ChatBubble";
+import Avatar from "@/components/Avatar";
 
 export default function Home() {
   const [transactions, setTransactions] = useLocalStorage<Transaction[]>(
@@ -38,6 +40,17 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
+  // State untuk avatar dan pesan
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
+  const [isMessageChanging, setIsMessageChanging] = useState(false);
+
+  const messages = [
+    "Selamat datang di Finance Tracker",
+    "Catat pengeluaran hari ini!",
+    "Sudah menabung hari ini?",
+    "Semangat kelola keuangan!",
+  ];
+
   // Deteksi ukuran layar
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -56,11 +69,24 @@ export default function Home() {
     return () => clearInterval(timer);
   }, []);
 
+  // Animasi pesan berganti setiap 8 detik
+  useEffect(() => {
+    const messageInterval = setInterval(() => {
+      setIsMessageChanging(true);
+      setTimeout(() => {
+        setCurrentMessageIndex((prev) => (prev + 1) % messages.length);
+        setIsMessageChanging(false);
+      }, 500); // Waktu transisi
+    }, 8000);
+
+    return () => clearInterval(messageInterval);
+  }, [messages.length]);
+
   // Simulasi loading
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 2500); // Sedikit lebih lama untuk menikmati animasi loading
+    }, 2500);
 
     return () => clearTimeout(timer);
   }, []);
@@ -147,35 +173,53 @@ export default function Home() {
         transition={{ duration: 0.7, delay: isLoading ? 1.2 : 0 }}
         className="max-w-7xl mx-auto p-4 md:p-6 space-y-6 min-h-screen"
       >
-        {/* Header dengan jam dan tombol tambah */}
+        {/* Header dengan avatar, teks, jam, dan tombol tambah */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: isLoading ? 1.4 : 0.2 }}
-          className="flex items-center justify-between p-3 md:p-4 rounded-xl shadow-sm bg-white/70 backdrop-blur-sm border border-blue-200/30"
+          className="p-4 md:p-5 rounded-xl shadow-sm bg-white/70 backdrop-blur-sm border border-blue-200/30"
         >
-          <div className="flex items-center space-x-4">
+          {/* Baris 1: Avatar dan Teks */}
+          <div className="flex items-start space-x-4 mb-4 md:mb-2">
+            {/* Avatar */}
+            <Avatar />
+
+            {/* Chat Bubble dengan pointer */}
+            <ChatBubble
+              messages={messages}
+              currentMessageIndex={currentMessageIndex}
+            />
+          </div>
+
+          {/* Baris 2: Jam dan Tombol (di mobile akan menjadi kolom) */}
+          <div className="flex flex-row items-center justify-between space-y-3 md:space-y-0 mt-4 md:mt-0">
             <motion.div
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
               transition={{ duration: 0.3 }}
-              className="text-xl md:text-2xl font-semibold text-blue-800/90 drop-shadow-sm"
+              className="text-xl md:text-2xl font-semibold text-blue-800/90 drop-shadow-sm text-center md:text-left"
             >
               {currentTime}
             </motion.div>
-          </div>
 
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              onClick={() => {
-                setSelectedDate(new Date());
-                openForm("add");
-              }}
-              className="bg-[linear-gradient(to_bottom_left,_#7DBEFF_23%,_#A8E5FF_100%)] text-white hover:bg-[linear-gradient(to_bottom_left,_#7DBEFF_23%,_#A8E5FF_100%)] dark:bg-[linear-gradient(to_bottom_left,_#7DBEFF_23%,_#A8E5FF_100%)] dark:text-white dark:hover:bg-[linear-gradient(to_bottom_left,_#7DBEFF_23%,_#A8E5FF_100%)] cursor-pointer text-sm md:text-base shadow-md hover:shadow-lg transition-all"
+            {/* Tombol - di mobile akan pindah ke bawah */}
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex justify-center md:justify-end"
             >
-              Tambah Transaksi +
-            </Button>
-          </motion.div>
+              <Button
+                onClick={() => {
+                  setSelectedDate(new Date());
+                  openForm("add");
+                }}
+                className="bg-[linear-gradient(to_bottom_left,_#7DBEFF_23%,_#A8E5FF_100%)] text-white hover:bg-[linear-gradient(to_bottom_left,_#7DBEFF_23%,_#A8E5FF_100%)] dark:bg-[linear-gradient(to_bottom_left,_#7DBEFF_23%,_#A8E5FF_100%)] dark:text-white dark:hover:bg-[linear-gradient(to_bottom_left,_#7DBEFF_23%,_#A8E5FF_100%)] cursor-pointer text-sm md:text-base shadow-md hover:shadow-lg transition-all w-full md:w-auto"
+              >
+                Tambah Transaksi +
+              </Button>
+            </motion.div>
+          </div>
         </motion.div>
 
         {/* 2 kolom: kalender kiri, summary & transaksi kanan */}

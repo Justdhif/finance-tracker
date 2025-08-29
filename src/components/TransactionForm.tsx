@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner"; // Import Sonner toast
 
 type Props = {
   onAdd: (t: Transaction) => void;
@@ -40,7 +41,22 @@ export default function TransactionForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!description || !amount || !date) return;
+
+    // Validasi form
+    if (!description.trim()) {
+      toast.error("Deskripsi harus diisi");
+      return;
+    }
+
+    if (!amount || amount <= 0) {
+      toast.error("Jumlah harus lebih dari 0");
+      return;
+    }
+
+    if (!date) {
+      toast.error("Tanggal harus diisi");
+      return;
+    }
 
     const newTransaction: Transaction = {
       id: defaultValue?.id ?? Date.now().toString(),
@@ -52,6 +68,17 @@ export default function TransactionForm({
 
     onAdd(newTransaction);
 
+    // Tampilkan toast sukses
+    toast.success(
+      isEditMode
+        ? "Transaksi berhasil diperbarui"
+        : "Transaksi berhasil ditambahkan",
+      {
+        description: `${description} - Rp ${amount.toLocaleString("id-ID")}`,
+      }
+    );
+
+    // Reset form jika bukan mode edit
     if (!defaultValue) {
       setDescription("");
       setAmount(0);

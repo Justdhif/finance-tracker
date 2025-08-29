@@ -15,6 +15,7 @@ import {
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import { Search, Calendar } from "lucide-react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
+import { toast } from "sonner"; // Import Sonner toast
 
 interface DailyTransactionsListProps {
   selectedDate: Date | null;
@@ -96,6 +97,19 @@ export default function DailyTransactionsList({
       }
       return 0;
     });
+
+  const handleDelete = (id: string) => {
+    const transaction = transactions.find((t) => t.id === id);
+    if (transaction) {
+      onDelete(id);
+      toast.success("Transaksi berhasil dihapus", {
+        description: `${
+          transaction.description
+        } - Rp ${transaction.amount.toLocaleString("id-ID")}`,
+      });
+    }
+    setDeleteTarget(null);
+  };
 
   return (
     <>
@@ -239,7 +253,7 @@ export default function DailyTransactionsList({
         open={!!deleteTarget}
         transaction={deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={onDelete}
+        onConfirm={handleDelete}
       />
     </>
   );
